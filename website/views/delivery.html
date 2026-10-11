@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Your translation · Leandro Brouschert</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="container nav"><a class="brand" href="/"><span class="brand-mark">LB</span><span>Leandro Brouschert</span></a></nav>
+  </header>
+  <main class="page-narrow">
+    <div class="form-card">
+      <span class="eyebrow">Order {{orderId}}</span>
+      <h1 style="font-size:2rem">Hi {{name}}, here is your translation</h1>
+      {{message}}
+      <ul class="file-list">{{files}}</ul>
+      <p class="muted" style="margin-top:20px">Would you like any changes? Reply to the delivery email or write to <a href="mailto:{{contactEmail}}">{{contactEmail}}</a>.</p>
+    </div>
+  </main>
+</body>
+</html>

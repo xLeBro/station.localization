@@ -1,0 +1,23 @@
+{
+  "name": "leandro-translations",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Order, upload and pay for translations by Leandro Brouschert",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning server.js",
+    "dev": "node --no-warnings=ExperimentalWarning --watch server.js",
+    "test": "node --no-warnings=ExperimentalWarning --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mammoth": "^1.8.0",
+    "multer": "^2.0.0",
+    "nodemailer": "^10.1.0",
+    "pdf-parse": "^1.1.1",
+    "stripe": "^17.5.0"
+  }
+}

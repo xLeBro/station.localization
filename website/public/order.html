@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Order a translation · Leandro Brouschert</title>
+  <meta name="description" content="Upload your files, get an instant quote and pay securely.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="container nav" aria-label="Main">
+      <a class="brand" href="/">
+        <span class="brand-mark">LB</span>
+        <span>Leandro Brouschert<small data-i18n="brand.tag">Translation · EN · DE · FR</small></span>
+      </a>
+      <div class="nav-actions" style="margin-left:auto">
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-lang="de" aria-pressed="false">DE</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page-narrow">
+    <span class="eyebrow" data-i18n="order.eyebrow">New order</span>
+    <h1 style="font-size: clamp(2rem, 4.5vw, 3rem)" data-i18n="order.title">Order your translation</h1>
+    <p class="muted" data-i18n="order.lede">Upload your files to see the exact price. Nothing is charged until you confirm and pay.</p>
+
+    <div class="steps-indicator" aria-hidden="true">
+      <span class="active" id="ind-1" data-i18n="order.step1">1 · Details &amp; files</span>
+      <span id="ind-2" data-i18n="order.step2">2 · Review &amp; pay</span>
+    </div>
+
+    <div id="alert" class="alert alert-error hidden" role="alert"></div>
+
+    <!-- Step 1 -->
+    <form id="order-form" class="form-card" novalidate>
+      <div class="field">
+        <span class="label" data-i18n="order.service">What do you need?</span>
+        <div class="options">
+          <div class="option">
+            <input type="radio" name="service" id="svc-document" value="document" checked>
+            <label for="svc-document"><b data-i18n="price.document">Documents &amp; websites</b><span data-i18n="order.svcDoc">Articles, websites, legal, business</span></label>
+          </div>
+          <div class="option">
+            <input type="radio" name="service" id="svc-book" value="book">
+            <label for="svc-book"><b data-i18n="price.book">Books &amp; manuscripts</b><span data-i18n="order.svcBook">Novels, stories, non-fiction</span></label>
+          </div>
+          <div class="option">
+            <input type="radio" name="service" id="svc-proofreading" value="proofreading">
+            <label for="svc-proofreading"><b data-i18n="price.proof">Proofreading</b><span data-i18n="order.svcProof">Check and polish a text</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="swap-row">
+          <div>
+            <label for="source" class="label" style="display:block;font-weight:600;margin-bottom:8px" data-i18n="order.from">From</label>
+            <select id="source" name="source"></select>
+          </div>
+          <button type="button" class="swap-btn" id="swap" aria-label="Swap languages">⇄</button>
+          <div>
+            <label for="target" class="label" style="display:block;font-weight:600;margin-bottom:8px" data-i18n="order.to">Into</label>
+            <select id="target" name="target"></select>
+          </div>
+        </div>
+        <div class="hint" id="pair-hint"></div>
+      </div>
+
+      <div class="field">
+        <span class="label" data-i18n="order.files">Your files</span>
+        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-describedby="file-types">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="margin:0 auto;color:var(--accent-ink)"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+          <b data-i18n="order.drop">Drop files here or click to browse</b>
+          <span class="muted" id="file-types"></span>
+        </div>
+        <input type="file" id="file-input" multiple hidden>
+        <ul class="file-list" id="file-list"></ul>
+        <p style="margin:10px 0 0"><button type="button" class="toggle-link" id="paste-toggle" data-i18n="order.pasteToggle">Or paste your text instead</button></p>
+        <div id="paste-wrap" class="hidden" style="margin-top:10px">
+          <textarea id="text" name="text" rows="8" data-i18n-placeholder="order.pastePh" placeholder="Paste the text you want translated…"></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="name" data-i18n="order.name">Your name</label>
+          <input type="text" id="name" name="name" autocomplete="name" required maxlength="120">
+        </div>
+        <div class="field">
+          <label for="email" data-i18n="order.email">Email</label>
+          <input type="email" id="email" name="email" autocomplete="email" required maxlength="200">
+          <div class="hint" data-i18n="order.emailHint">Your translation will be sent here.</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="notes" data-i18n="order.notes">Notes for the translator <span class="muted" style="font-weight:400">(optional)</span></label>
+        <textarea id="notes" name="notes" maxlength="5000" data-i18n-placeholder="order.notesPh" placeholder="Target audience, tone, glossary, regional variant (e.g. Swiss German), formatting needs…"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="check"><input type="checkbox" id="express" name="express"> <span><b data-i18n="order.express">Express delivery</b> · <span class="muted" data-i18n="order.expressHint">faster turnaround for a surcharge, shown in the quote</span></span></label>
+      </div>
+
+      <button type="submit" class="btn btn-accent btn-block" id="quote-btn">
+        <span data-i18n="order.getQuote">Calculate my price</span>
+      </button>
+    </form>
+
+    <!-- Step 2 -->
+    <section id="review" class="form-card hidden" aria-live="polite">
+      <h2 style="font-size:1.6rem" data-i18n="order.reviewTitle">Your quote</h2>
+      <table class="summary-table">
+        <tbody id="summary-rows"></tbody>
+      </table>
+
+      <div id="estimate-wrap" class="field hidden">
+        <div class="alert alert-info" data-i18n="order.estimateInfo">Some files couldn't be counted automatically (for example scanned PDFs or other formats). Please enter their approximate total word count. I'll confirm with you before starting if it's far off.</div>
+        <label for="estimate" data-i18n="order.estimate">Estimated words in those files</label>
+        <input type="number" id="estimate" min="0" step="100" inputmode="numeric">
+      </div>
+
+      <div class="field">
+        <label class="check"><input type="checkbox" id="express-2"> <span><b data-i18n="order.express">Express delivery</b> <span class="muted" id="express-price"></span></span></label>
+      </div>
+
+      <div class="summary-total">
+        <span><span data-i18n="order.total">Total</span><br><span class="muted" id="delivery-line" style="font-size:.9rem"></span></span>
+        <b id="total">–</b>
+      </div>
+
+      <div class="field" style="margin-top:22px">
+        <label class="check"><input type="checkbox" id="terms"> <span data-i18n="order.terms">I agree to the <a href="/legal" target="_blank">terms and privacy policy</a>.</span></label>
+      </div>
+
+      <button type="button" class="btn btn-accent btn-block" id="pay-btn" disabled>
+        <span data-i18n="order.pay">Pay securely</span> <span id="pay-amount"></span>
+      </button>
+      <div class="secure-note">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span data-i18n="order.secure">Secure checkout by Stripe · cards, Apple Pay, Google Pay</span>
+      </div>
+      <p class="center" style="margin:18px 0 0"><button type="button" class="toggle-link" id="back-btn" data-i18n="order.back">← Change details or files</button></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>© <span id="year"></span> Leandro Brouschert</div>
+      <div class="footer-links">
+        <a class="contact-email" href="#">Email</a>
+        <a href="/legal" data-i18n="footer.legal">Legal notice &amp; privacy</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/order.js"></script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Orders · Admin</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { background: #f3f1ec; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 80px; }
+    .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .bar h1 { font-size: 1.8rem; margin: 0; }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+    .kpi { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .kpi b { display: block; font: 600 1.6rem var(--serif); }
+    .kpi span { font-size: .8rem; color: var(--muted); }
+    @media (max-width: 700px) { .kpis { grid-template-columns: 1fr 1fr; } }
+    .order { background: #fff; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+    .order > summary { list-style: none; cursor: pointer; padding: 16px 18px; display: grid; grid-template-columns: 120px 1fr auto auto; gap: 14px; align-items: center; }
+    .order > summary::-webkit-details-marker { display: none; }
+    @media (max-width: 700px) { .order > summary { grid-template-columns: 1fr auto; } .order .hide-sm { display: none; } }
+    .pill { font-size: .74rem; font-weight: 700; padding: .3em .7em; border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+    .s-paid { background: #fdecc8; color: #7a4b00; }
+    .s-in_progress { background: #dde8fb; color: #1d3f78; }
+    .s-delivered, .s-completed { background: #dcf1e4; color: #1f7a4d; }
+    .s-cancelled, .s-draft, .s-awaiting_payment { background: #eee; color: #555; }
+    .overdue { color: var(--err); font-weight: 600; }
+    .body { padding: 0 18px 18px; border-top: 1px solid var(--line); }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px; }
+    @media (max-width: 800px) { .cols { grid-template-columns: 1fr; } }
+    .kv { font-size: .92rem; } .kv div { padding: 4px 0; } .kv span { color: var(--muted); display: inline-block; min-width: 110px; }
+    .notes { white-space: pre-wrap; background: var(--paper); border-radius: 8px; padding: 10px 12px; font-size: .9rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    h4 { margin: 0 0 8px; font-size: .95rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="bar">
+      <h1>Orders</h1>
+      <div style="display:flex;gap:14px;align-items:center">
+        <label class="check" style="margin:0"><input type="checkbox" id="show-drafts"> Show unpaid quotes</label>
+        <button class="btn btn-sm btn-ghost" id="refresh">Refresh</button>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><b id="k-open">0</b><span>Open orders</span></div>
+      <div class="kpi"><b id="k-overdue">0</b><span>Overdue</span></div>
+      <div class="kpi"><b id="k-month">$0</b><span>Paid this month</span></div>
+      <div class="kpi"><b id="k-total">$0</b><span>Paid all time</span></div>
+    </div>
+    <div id="alert" class="alert alert-error hidden"></div>
+    <div id="orders"></div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const money = (c) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(c / 100);
+    const utc = (s) => s ? new Date(s.replace(' ', 'T') + 'Z') : null;
+    const fmt = (s) => s ? utc(s).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '–';
+    const LANG = { en: 'EN', de: 'DE', fr: 'FR' };
+    const OPEN = ['paid', 'in_progress'];
+    let openIds = new Set();
+
+    async function load() {
+      document.querySelectorAll('.order[open]').forEach((d) => openIds.add(d.dataset.id));
+      const res = await fetch('/api/admin/orders' + ($('show-drafts').checked ? '?drafts=1' : ''));
+      const orders = await res.json();
+      const now = new Date();
+      const paid = orders.filter((o) => o.paid_at && o.status !== 'cancelled');
+      $('k-open').textContent = orders.filter((o) => OPEN.includes(o.status)).length;
+      $('k-overdue').textContent = orders.filter((o) => OPEN.includes(o.status) && utc(o.due_at) < now).length;
+      $('k-month').textContent = money(paid.filter((o) => { const d = utc(o.paid_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, o) => s + o.total_cents, 0));
+      $('k-total').textContent = money(paid.reduce((s, o) => s + o.total_cents, 0));
+
+      $('orders').innerHTML = orders.length ? orders.map(render).join('') : '<p class="muted">No orders yet.</p>';
+    }
+
+    function render(o) {
+      const overdue = OPEN.includes(o.status) && utc(o.due_at) < new Date();
+      const src = o.files.filter((f) => f.kind === 'source');
+      const del = o.files.filter((f) => f.kind === 'delivery');
+      const fileLinks = (list) => list.length
+        ? list.map((f) => `<li><a class="file-link" href="/api/admin/files/${f.id}">${esc(f.original_name)}</a> <span class="muted">${f.words != null ? f.words.toLocaleString() + ' words · ' : ''}${(f.size / 1024).toFixed(0)} KB</span></li>`).join('')
+        : '<li class="muted">None</li>';
+      return `
+      <details class="order" data-id="${esc(o.public_id)}" ${openIds.has(o.public_id) ? 'open' : ''}>
+        <summary>
+          <b>${esc(o.public_id)}</b>
+          <span>${esc(o.name)} · ${LANG[o.source_lang]} → ${LANG[o.target_lang]} · ${(o.counted_words + o.estimated_words).toLocaleString()} words${o.express ? ' · <b>express</b>' : ''}</span>
+          <span class="hide-sm ${overdue ? 'overdue' : 'muted'}">${o.due_at ? 'Due ' + fmt(o.due_at) : ''}</span>
+          <span class="pill s-${esc(o.status)}">${esc(o.status.replace('_', ' '))}</span>
+        </summary>
+        <div class="body">
+          <div class="cols">
+            <div class="kv">
+              <div><span>Client</span>${esc(o.name)} · <a href="mailto:${esc(o.email)}?subject=${encodeURIComponent('Your order ' + o.public_id)}">${esc(o.email)}</a></div>
+              <div><span>Service</span>${esc(o.service)}${o.express ? ' (express)' : ''}</div>
+              <div><span>Words</span>${o.counted_words.toLocaleString()} counted${o.estimated_words ? ` + ${o.estimated_words.toLocaleString()} estimated by client` : ''}</div>
+              <div><span>Total</span>${money(o.total_cents)}</div>
+              <div><span>Created</span>${fmt(o.created_at)}</div>
+              <div><span>Paid</span>${fmt(o.paid_at)}</div>
+              <div><span>Due</span>${fmt(o.due_at)} (${o.days} days)</div>
+              <div><span>Delivered</span>${fmt(o.delivered_at)}</div>
+              <div><span>Client page</span><a href="${esc(o.deliveryUrl)}" target="_blank">open</a></div>
+              ${o.notes ? `<h4 style="margin-top:12px">Notes</h4><div class="notes">${esc(o.notes)}</div>` : ''}
+            </div>
+            <div>
+              <h4>Source files</h4><ul class="file-list" style="list-style:none;padding:0">${fileLinks(src)}</ul>
+              <h4 style="margin-top:14px">Delivered files</h4><ul class="file-list" style="list-style:none;padding:0">${fileLinks(del)}</ul>
+              <form class="deliver" data-id="${esc(o.public_id)}" style="margin-top:14px">
+                <h4>Deliver translation</h4>
+                <input type="file" name="files" multiple required style="margin-bottom:8px">
+                <textarea name="message" rows="3" placeholder="Optional message to the client"></textarea>
+                <button class="btn btn-sm btn-accent" style="margin-top:8px">Upload &amp; email client</button>
+              </form>
+              <div class="actions">
+                ${['in_progress', 'completed', 'cancelled'].map((s) => `<button class="btn btn-sm btn-ghost" data-status="${s}" data-id="${esc(o.public_id)}">Mark ${s.replace('_', ' ')}</button>`).join('')}
+                ${src.length ? `<button class="btn btn-sm btn-ghost" data-purge="${esc(o.public_id)}">Delete source files</button>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>`;
+    }
+
+    function fail(msg) { $('alert').textContent = msg; $('alert').classList.remove('hidden'); }
+
+    document.addEventListener('click', async (e) => {
+      const s = e.target.closest('[data-status]');
+      const p = e.target.closest('[data-purge]');
+      try {
+        if (s) {
+          if (s.dataset.status === 'cancelled' && !confirm('Cancel this order? Refunds are done in the Stripe dashboard.')) return;
+          await fetch(`/api/admin/orders/${s.dataset.id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: s.dataset.status }) });
+          load();
+        }
+        if (p) {
+          if (!confirm('Permanently delete the client\'s source files for this order?')) return;
+          await fetch(`/api/admin/orders/${p.dataset.purge}/purge-sources`, { method: 'POST' });
+          load();
+        }
+      } catch (err) { fail(err.message); }
+    });
+
+    document.addEventListener('submit', async (e) => {
+      if (!e.target.matches('.deliver')) return;
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      btn.disabled = true; btn.textContent = 'Uploading…';
+      const res = await fetch(`/api/admin/orders/${e.target.dataset.id}/deliver`, { method: 'POST', body: new FormData(e.target) });
+      if (!res.ok) fail((await res.json().catch(() => ({}))).error || 'Upload failed');
+      load();
+    });
+
+    $('refresh').addEventListener('click', load);
+    $('show-drafts').addEventListener('change', load);
+    load();
+  </script>
+</body>
+</html>

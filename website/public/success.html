@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <title>Order confirmed · Leandro Brouschert</title>
+  <meta name="robots" content="noindex">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="container nav" aria-label="Main">
+      <a class="brand" href="/"><span class="brand-mark">LB</span><span>Leandro Brouschert<small data-i18n="brand.tag">Translation · EN · DE · FR</small></span></a>
+      <div class="nav-actions" style="margin-left:auto">
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-lang="de" aria-pressed="false">DE</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+  <main class="page-narrow">
+    <div class="form-card">
+      <span class="eyebrow" data-i18n="success.eyebrow">Order</span>
+      <div id="state-checking">
+        <h1 style="font-size:2rem" data-i18n="success.checking">Confirming your payment…</h1>
+      </div>
+      <div id="state-paid" class="hidden">
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)" data-i18n="success.title">Thank you, your order is confirmed!</h1>
+        <p data-i18n="success.text">A confirmation is on its way to your inbox. When the translation is ready you'll get an email with a download link.</p>
+      </div>
+      <div id="state-pending" class="hidden alert alert-info" data-i18n="success.pending">Your payment is still being processed. This page updates automatically, and you'll get an email once it's confirmed.</div>
+      <table class="summary-table">
+        <tr><td data-i18n="success.ref">Order reference</td><td><b id="ref">–</b></td></tr>
+        <tr id="due-row" class="hidden"><td data-i18n="success.due">Expected delivery</td><td id="due"></td></tr>
+      </table>
+      <p class="muted" style="font-size:.9rem" data-i18n="success.bookmark">Bookmark this page to check the status later.</p>
+      <a class="btn btn-ghost" href="/" data-i18n="success.home">Back to home</a>
+    </div>
+  </main>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/common.js"></script>
+  <script>
+    (function () {
+      const p = new URLSearchParams(location.search);
+      const id = p.get('order');
+      const token = p.get('token');
+      document.getElementById('ref').textContent = id || '–';
+      try { sessionStorage.removeItem('order'); } catch {}
+      let tries = 0;
+      async function check() {
+        tries++;
+        try {
+          const res = await fetch('/api/orders/' + encodeURIComponent(id), { headers: { 'X-Order-Token': token } });
+          if (!res.ok) throw new Error();
+          const o = await res.json();
+          const paid = !['draft', 'awaiting_payment'].includes(o.status);
+          document.getElementById('state-checking').classList.add('hidden');
+          document.getElementById('state-paid').classList.toggle('hidden', !paid);
+          document.getElementById('state-pending').classList.toggle('hidden', paid);
+          if (paid && o.dueAt) {
+            document.getElementById('due-row').classList.remove('hidden');
+            const d = new Date(o.dueAt.replace(' ', 'T') + 'Z');
+            document.getElementById('due').textContent = d.toLocaleDateString(currentLang === 'de' ? 'de-DE' : 'en-US', { dateStyle: 'long' });
+          }
+          if (!paid && tries < 40) setTimeout(check, 3000);
+        } catch { if (tries < 40) setTimeout(check, 3000); }
+      }
+      if (id && token) check();
+    })();
+  </script>
+</body>
+</html>
