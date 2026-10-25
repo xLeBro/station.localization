@@ -2,6 +2,17 @@
 // To add a language, add a block here and a button in the .lang-switch.
 const I18N = {
   de: {
+    'skip': 'Zum Inhalt springen',
+    'aria.nav': 'Hauptmenü',
+    'aria.menu': 'Menü',
+    'aria.lang': 'Sprache',
+    'hero.badge': 'Offen für neue Projekte',
+    'sample.title': 'Übersetzungsbeispiel',
+    'trust.outOf': ' von 5 Sternen',
+    'calc.doc': 'Dokumente',
+    'calc.book': 'Bücher',
+    'calc.order': 'Diese Übersetzung bestellen',
+    'footer.contact': 'Kontakt',
     'brand.tag': 'Übersetzung · EN · DE · FR',
     'nav.services': 'Leistungen',
     'nav.work': 'Veröffentlichungen',
@@ -58,17 +69,19 @@ const I18N = {
     'price.from': 'Mindestens',
     'price.revisions': 'Korrekturschleifen inklusive',
     'price.proofread': 'Korrektur gelesen und formatiert',
-    'price.docSpeed': 'Etwa 1.500 Wörter pro Tag',
+    'price.docSpeed': 'Etwa <span data-speed="document"></span> Wörter pro Tag',
     'price.express': 'Express-Lieferung möglich',
     'price.badge': 'Für Autoren',
-    'price.bookExample': 'Ein Roman mit 50.000 Wörtern: 650 $ in 10 Tagen',
+    'price.bookExample': 'Ein Roman mit <span data-ex="words"></span> Wörtern: <span data-ex="price"></span> in <span data-ex="days"></span>&nbsp;Tagen',
     'price.bookStyle': 'Ton, Rhythmus und Stimme bleiben erhalten',
     'price.bookFormat': 'Korrektorat und Formatierung',
-    'price.bookExpress': 'Express: 7 statt 10 Tage',
+    'price.bookExpress': 'Express: <span data-ex="xdays"></span> statt <span data-ex="days"></span>&nbsp;Tage',
     'price.proof1': 'Grammatik, Rechtschreibung und Stil',
     'price.proof2': 'Prüfung bestehender Übersetzungen',
     'price.proof3': 'Änderungen nachverfolgbar auf Wunsch',
-    'price.cta': 'Angebot erhalten',
+    'price.ctaDoc': 'Angebot für Dokumente',
+    'price.ctaBook': 'Angebot für Bücher',
+    'price.ctaProof': 'Angebot fürs Korrektorat',
     'calc.title': 'Schnelle Schätzung',
     'calc.words': 'Anzahl Wörter',
     'calc.service': 'Leistung',
@@ -165,6 +178,9 @@ const JS_STRINGS = {
     wordsLabel: 'Total words',
     estimated: 'estimated',
     pasted: 'Pasted text',
+    pauseSamples: 'Pause samples',
+    playSamples: 'Play samples',
+    sampleN: (i, n) => `Sample ${i} of ${n}`,
   },
   de: {
     days: (n) => `${n} Tag${n === 1 ? '' : 'e'}`,
@@ -193,6 +209,9 @@ const JS_STRINGS = {
     wordsLabel: 'Wörter gesamt',
     estimated: 'geschätzt',
     pasted: 'Eingefügter Text',
+    pauseSamples: 'Beispiele anhalten',
+    playSamples: 'Beispiele abspielen',
+    sampleN: (i, n) => `Beispiel ${i} von ${n}`,
   },
 };
 
@@ -206,7 +225,12 @@ function detectLang() {
     const saved = localStorage.getItem('lang');
     if (saved === 'en' || saved === 'de') return saved;
   } catch {}
-  return (navigator.language || '').toLowerCase().startsWith('de') ? 'de' : 'en';
+  const preferred = navigator.languages?.length ? navigator.languages : [navigator.language || 'en'];
+  for (const l of preferred) {
+    const code = l.toLowerCase().slice(0, 2);
+    if (code === 'de' || code === 'en') return code;
+  }
+  return 'en';
 }
 
 let currentLang = detectLang();
@@ -230,6 +254,10 @@ function applyLang(lang) {
   document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
     if (el.dataset.enPh === undefined) el.dataset.enPh = el.placeholder;
     el.placeholder = lang === 'en' ? el.dataset.enPh : (dict[el.dataset.i18nPlaceholder] ?? el.dataset.enPh);
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+    if (el.dataset.enAria === undefined) el.dataset.enAria = el.getAttribute('aria-label') || '';
+    el.setAttribute('aria-label', lang === 'en' ? el.dataset.enAria : (dict[el.dataset.i18nAria] ?? el.dataset.enAria).replace(/&amp;/g, '&'));
   });
   document.documentElement.lang = lang;
   document.querySelectorAll('.lang-switch button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));

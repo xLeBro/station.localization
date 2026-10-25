@@ -44,6 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const open = links.classList.toggle('open');
       toggle.setAttribute('aria-expanded', String(open));
     });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && links.classList.contains('open')) {
+        links.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.focus();
+      }
+    });
     links.addEventListener('click', (e) => {
       if (e.target.tagName === 'A') {
         links.classList.remove('open');

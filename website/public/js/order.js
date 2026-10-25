@@ -18,6 +18,7 @@ configPromise.then((cfg) => {
   const params = new URLSearchParams(location.search);
   const preset = params.get('service');
   if (preset && cfg.services[preset]) $(`svc-${preset}`).checked = true;
+  if (params.get('express') === '1') $('express').checked = true;
 
   function renderLanguages() {
     const s = source.value || 'en';
